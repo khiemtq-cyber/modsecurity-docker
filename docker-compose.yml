@@ -34,6 +34,23 @@ services:
     depends_on:
     - backend
 
+  nginx-waf-alpine:
+    build:
+      context: .
+      dockerfile: v3-nginx/Dockerfile-alpine
+    environment:
+      BACKEND: http://backend  # https://httpbin.org
+      PORT: "8080"
+      SSL_PORT: "4443"
+      # DNS_SERVER: "8.8.8.8"
+      METRICS_ALLOW_FROM: all
+    ports:
+    - "8082:8080"
+    - "4445:4443"
+    user: "10001"
+    depends_on:
+    - backend
+
   backend:
     image: docker.io/kennethreitz/httpbin
     ports:

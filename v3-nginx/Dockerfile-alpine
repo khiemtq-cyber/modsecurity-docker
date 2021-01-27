@@ -1,26 +1,33 @@
-FROM nginx:1.18 as build
+ARG NGINX_VER=1.18
+FROM nginx:${NGINX_VER}-alpine as build
 
 LABEL version="3.0.5"
 LABEL maintainer="Chaim Sanders <chaim.sanders@gmail.com>"
 
-RUN apt-get update \
- && apt-get install -y --no-install-recommends \
-      automake \
-      cmake \
-      doxygen \
-      g++ \
-      git \
-      libcurl4-gnutls-dev \
-      libgeoip-dev \
-      liblua5.3-dev \
-      libpcre++-dev \
-      libtool \
-      libxml2-dev \
-      make \
-      ruby \
-      wget \
- && apt-get clean \
- && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache --virtual general-dependencies \
+    autoconf \
+    automake \
+    cmake \
+    byacc \
+    curl-dev \
+    flex \
+    g++ \
+    gcc \
+    geoip-dev \
+    git \
+    libc-dev \
+    libmaxminddb-dev \
+    libstdc++ \
+    libtool \
+    libxml2-dev \
+    linux-headers \
+    make \
+    ruby \
+    openssl-dev \
+    pcre-dev \
+    zlib-dev \
+    openssl \
+    doxygen
 
 WORKDIR /sources
 
@@ -54,9 +61,9 @@ RUN openssl req -x509 -days 365 -new \
       -keyout /usr/share/TLS/server.key \
       -out /usr/share/TLS/server.crt
 
-FROM nginx:1.18
+FROM nginx:${NGINX_VER}-alpine
 
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+SHELL ["/bin/sh", "-o", "pipefail", "-c"]
 
 ENV ACCESSLOG=/var/log/nginx/access.log \
     BACKEND=http://localhost:80 \
@@ -95,23 +102,22 @@ ENV ACCESSLOG=/var/log/nginx/access.log \
     WORKER_CONNECTIONS=1024 \
     LD_LIBRARY_PATH=/lib:/usr/lib:/usr/local/lib
 
-RUN apt-get update \
- && apt-get install -y --no-install-recommends \
-      ca-certificates \
+RUN apk add --no-cache bash ca-certificates \
       gcc \
+      g++ \
       git \
-      libcurl4-gnutls-dev \
-      liblua5.3-dev \
-      libpcre++-dev \
+      gnutls-dev \
+      lua5.3-dev \
+      pcre-dev \
       libxml2-dev \
       make \
       wget \
       moreutils \
-      zlib1g-dev && \
-      rm -rf /var/lib/apt/lists/* && \
-      apt-get clean \
- && git clone https://github.com/SpiderLabs/ModSecurity-nginx --branch v1.0.1 --depth 1 \
- && mkdir /etc/nginx/ssl/
+      zlib-dev \
+      libmaxminddb-dev
+
+RUN git clone https://github.com/SpiderLabs/ModSecurity-nginx --branch v1.0.1 --depth 1
+RUN mkdir /etc/nginx/ssl/
 
 COPY --from=build /usr/local/modsecurity/ /usr/local/modsecurity/
 COPY --from=build /usr/local/lib/ /usr/local/lib/
